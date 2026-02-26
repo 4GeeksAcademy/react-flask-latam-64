@@ -4,7 +4,7 @@ import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 
 export const Home = () => {
 
-	const { store, dispatch } = useGlobalReducer()
+	const { store, dispatch, actions } = useGlobalReducer()
 
 	const loadMessage = async () => {
 		try {
@@ -12,7 +12,7 @@ export const Home = () => {
 
 			if (!backendUrl) throw new Error("VITE_BACKEND_URL is not defined in .env file")
 
-			const response = await fetch(backendUrl + "/api/hello")
+			const response = await fetch(backendUrl + "/hello")
 			const data = await response.json()
 
 			if (response.ok) dispatch({ type: "set_hello", payload: data.message })
@@ -29,7 +29,7 @@ export const Home = () => {
 	}
 
 	useEffect(() => {
-		loadMessage()
+
 	}, [])
 
 	return (
@@ -38,15 +38,16 @@ export const Home = () => {
 			<p className="lead">
 				<img src={rigoImageUrl} className="img-fluid rounded-circle mb-3" alt="Rigo Baby" />
 			</p>
-			<div className="alert alert-info">
-				{store.message ? (
-					<span>{store.message}</span>
-				) : (
-					<span className="text-danger">
-						Loading message from the backend (make sure your python 🐍 backend is running)...
-					</span>
-				)}
-			</div>
+			{store.token ?
+				<div className="alert alert-info">
+					<h3>Favoritos</h3>
+					<ul class="list-group">
+						{store.favorites.length == 0 ? <li class="list-group-item">No hay favoritos</li> :
+							store.favorites.map(fav => <li class="list-group-item">{fav.element_type}: {fav.element_id}</li>)}
+
+					</ul>
+				</div>
+				: <div className="alert alert-warning">No hay sesion activa</div>}
 		</div>
 	);
 }; 
