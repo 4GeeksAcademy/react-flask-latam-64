@@ -1,10 +1,10 @@
-const apiUrl =
-  import.meta.env.VITE_BACKEND_URL
+const apiUrl = import.meta.env.VITE_BACKEND_URL;
 
 export const initialStore = () => {
   return {
     message: null,
-    todos: [{
+    todos: [
+      {
         id: 1,
         title: "Make the bed",
         background: null,
@@ -13,176 +13,183 @@ export const initialStore = () => {
         id: 2,
         title: "Do my homework",
         background: null,
-      }
+      },
     ],
     token: null,
     fullUserName: null,
-    favorites: []
-  }
-}
+    favorites: [],
+  };
+};
 
 export default function storeReducer(store, action = {}) {
   switch (action.type) {
-    case 'set_hello':
+    case "set_hello":
       return {
         ...store,
-        message: action.payload
+        message: action.payload,
       };
-    case 'add_task':
-      const {
-        id, color
-      } = action.payload
-      let newTodos = store.todos.map((todo) => (todo.id === id ? {
-        ...todo,
-        background: color
-      } : todo))
+    case "add_task":
+      const { id, color } = action.payload;
+      let newTodos = store.todos.map((todo) =>
+        todo.id === id
+          ? {
+              ...todo,
+              background: color,
+            }
+          : todo,
+      );
       return {
         ...store,
-        todos: newTodos
+        todos: newTodos,
       };
-    case 'set_favorites':
+    case "set_favorites":
       return {
-        ...store, favorites: action.payload
-      }
-      case 'load_token':
-        return {
-          ...store,
-          token: action.payload
-        }
-        case 'load_user_info':
-          return {
-            ...store,
-            userFullName: action.payload.userFullName,
-              favorites: action.payload.favorites
-          }
-          default:
-            throw Error('Unknown action.');
+        ...store,
+        favorites: action.payload,
+      };
+    case "load_token":
+      return {
+        ...store,
+        token: action.payload,
+      };
+    case "load_user_info":
+      return {
+        ...store,
+        userFullName: action.payload.userFullName,
+        favorites: action.payload.favorites,
+      };
+    default:
+      throw Error("Unknown action.");
   }
 }
 
 export class Actions {
   constructor(dispatch, store) {
-    this.dispatch = dispatch
-    this.store = store
+    this.dispatch = dispatch;
+    this.store = store;
+  }
+
+  async apiFetch(endpoint, method = "GET", body = null, isPrivate = true) {
+    const token = this.store.token;
+    if (!token && isPrivate) {
+      console.error("No token");
+      return;
+    }
+    const fetchParams = { method, headers: {} };
+    if (body) {
+      fetchParams.body = JSON.stringify(body);
+      fetchParams.headers["Content-Type"] = "application/json";
+    }
+    if (isPrivate) {
+      fetchParams.headers["Authorization"] = "Bearer " + token;
+    }
+
+    try {
+      const resp = await fetch(apiUrl + endpoint, fetchParams);
+      let data = await resp.json();
+      return { code: resp.status, ok: resp.ok, data };
+    } catch (error) {
+      return { code: 0, ok: false, error: error.message, data: null };
+    }
   }
 
   async login(username, password) {
-    const resp = await fetch(apiUrl + "/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        username,
-        password
-      })
-    })
-
+    const resp = await this.apiFetch(
+      "/login",
+      "POST",
+      { username, password },
+      false,
+    );
     if (!resp.ok) {
-      let errroInfo = await resp.json()
       return {
-        error: errroInfo.error
-      }
+        error: resp.data.error,
+      };
     }
-
-    let data = await resp.json()
-    localStorage.setItem("token", data.token)
-    this.loadToken()
-    await this.loadUserInfo()
+    localStorage.setItem("token", resp.data.token);
+    this.loadToken();
+    await this.loadUserInfo();
     return {
-      message: data.message
-    }
+      message: resp.data.message,
+    };
   }
 
   loadToken() {
-    const token = localStorage.getItem("token")
+    const token = localStorage.getItem("token");
     if (token) {
       this.dispatch({
         type: "load_token",
-        payload: token
-      })
+        payload: token,
+      });
     }
   }
 
   async loadUserInfo() {
-    const token = this.store.token
-    if (!token) {
-      console.error("No token")
-      return
-    }
-    const resp = await fetch(apiUrl + "/user/", {
-      headers: {
-        "Authorization": "Bearer " + token
-      }
-    })
+    const resp = await this.apiFetch("/user");
     if (!resp.ok) {
-      alert("Error al establecer el usuario:\n" + resp.statusText)
+      alert("Error al establecer el usuario:\n" + resp.error);
       this.dispatch({
         type: "load_token",
-        payload: null
-      })
-      localStorage.removeItem("token")
-      return
+        payload: null,
+      });
+      localStorage.removeItem("token");
+      return;
     }
-    const data_json = await resp.json()
+
     this.dispatch({
       type: "load_user_info",
       payload: {
-        userFullName: data_json.fullName,
-        favorites: data_json.favorites
-      }
-    })
+        userFullName: resp.data.fullName,
+        favorites: resp.data.favorites,
+      },
+    });
   }
 
   async addFavorite(newFavorite) {
-    const token = this.store.token
+    /*   const token = this.store.token;
     if (!token) {
-      console.error("No token")
-      return
+      console.error("No token");
+      return;
     }
-    const resp = await fetch(apiUrl + "/favorites/", {
+    const resp = await fetch(apiUrl + "/favorites", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
+        Authorization: "Bearer " + token,
       },
-      body: JSON.stringify(newFavorite)
-    })
+      body: JSON.stringify(newFavorite),
+    }); */
+    const resp = await this.apiFetch("/favorites", "POST", newFavorite);
     if (!resp.ok) {
-      alert("Error al guardar favorito:\n" + resp.statusText)
-      return null
+      alert("Error al guardar favorito:\n");
+      return null;
     }
-    const data_json = await resp.json()
-    const newFavorites = [...this.store.favorites, data_json.data]
+    const data_json = resp.data;
+    const newFavorites = [...this.store.favorites, data_json.data];
     this.dispatch({
       type: "set_favorites",
-      payload: newFavorites
-    })
-    return data_json.data
+      payload: newFavorites,
+    });
+    return data_json.data;
   }
 
   async logout() {
-    const token = this.store.token
-    if (!token) {
-      console.error("No token")
-      return
-    }
-    const resp = await fetch(apiUrl + "/logout", {
-      headers: {
-        "Authorization": "Bearer " + token
-      },
-      method: "POST"
-    })
+    const resp = await this.apiFetch("/logout", "POST");
     if (!resp.ok) {
-      alert("Error al cerrar session:\n" + resp.statusText)
-      return
+      alert("Error al cerrar session:\n" + resp.statusText);
+      return;
     }
     this.dispatch({
       type: "load_token",
-      payload: null
-    })
-    localStorage.removeItem("token")
+      payload: null,
+    });
+    localStorage.removeItem("token");
   }
 
-
+  async registerUser(user) {
+    const resp = await this.apiFetch("/user", "POST", user, false);
+    if (!resp.ok) {
+      return { error: resp.error };
+    }
+    return { message: "ok" };
+  }
 }

@@ -41,9 +41,9 @@ export const Home = () => {
 			{store.token ?
 				<div className="alert alert-info">
 					<h3>Favoritos</h3>
-					<ul class="list-group">
-						{store.favorites.length == 0 ? <li class="list-group-item">No hay favoritos</li> :
-							store.favorites.map(fav => <li class="list-group-item">{fav.element_type}: {fav.element_id}</li>)}
+					<ul className="list-group">
+						{store.favorites.length == 0 ? <li className="list-group-item">No hay favoritos</li> :
+							store.favorites.map(fav => <li className="list-group-item">{fav.element_type}: {fav.element_id}</li>)}
 
 					</ul>
 				</div>

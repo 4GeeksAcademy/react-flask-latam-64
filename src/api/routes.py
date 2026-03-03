@@ -28,19 +28,6 @@ def handle_hello():
     return jsonify(response_body), 200
 
 
-@api.route("/register", methods=['POST'])
-def user_register():
-    body = request.get_json()
-    username = body["username"]
-    password = body["password"]
-    secure_password = bcrypt.generate_password_hash(password).decode("utf-8")
-    new_user = User(username=username,
-                    password=secure_password, is_active=True)
-    db.session.add(new_user)
-    db.session.commit()
-    return jsonify({"message": "Usuario creado con exito"}), 201
-
-
 @api.route("/login", methods=['POST'])
 def user_login():
     # Obtenemos el username y la clave que envia el usuario
@@ -108,10 +95,20 @@ def create_user():
     body = request.get_json()
     if (body["username"] is None):
         return jsonify({"error": "Username is required"}), 400
+    if (body["password"] is None):
+        return jsonify({"error": "Password is required"}), 400
 
     try:
+        secure_password = bcrypt.generate_password_hash(
+            body["password"]).decode("utf-8")
         new_user = User(username=body["username"],
-                        password="123456", is_active=True)
+                        password=secure_password, is_active=True)
+        # Se guardan los campos opcionales, si vienen en la petición
+        if (body["full_name"] is not None):
+            new_user.full_name = body["full_name"]
+        if (body["address"] is not None):
+            new_user.address = body["address"]
+
         db.session.add(new_user)
         db.session.commit()
         return jsonify({"message": "User created"}), 201

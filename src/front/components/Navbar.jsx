@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import FavoriteFormDropdown from "./FavoriteFormDropdown";
-import LoginFormDropdown from "./LoginFormDropdown"
+import UserDropdown from "./UserDropdown"
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
 export const Navbar = () => {
@@ -22,7 +22,7 @@ export const Navbar = () => {
 								Cerrar sesion
 							</button>
 						</div> :
-						<LoginFormDropdown />
+						<UserDropdown />
 					}
 
 				</div>
